@@ -81,5 +81,91 @@ tss_multiple <- sum((test_data$price - mean(test_data$price))^2)
 r_squared_multiple <- 1 - (rss_multiple / tss_multiple)
 print(paste("R-squared (multiple):", r_squared_multiple))
 
-# Save the model
-saveRDS(modele_multiple, "modele_multiple.rds")
+# -------------------------------------------- shiny app ----------------------------------
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Prédiction du Prix d'un Logement à Paris"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      # numericInput("latitude", "Latitude:", value = 48.8566, min = -90, max = 90),
+      # numericInput("longitude", "Longitude:", value = 2.3522, min = -180, max = 180),
+      
+      selectInput("neighbourhood", "Quartier:", choices = c("Batignolles-Monceau", "Bourse", "Buttes-Chaumont", "Buttes-Montmartre", "Élysée", 
+                                                            "Entrepôt", "Gobelins", "Hôtel-de-Ville", "Louvre", "Luxembourg", 
+                                                            "Ménilmontant", "Observatoire", "Opéra", "Palais-Bourbon", "Panthéon", 
+                                                            "Passy", "Popincourt", "Reuilly", "Temple", "Vaugirard")),
+      
+      selectInput("room_type", "Type de Chambre:", choices = c("Entire home/apt", "Hotel room", "Private room", "Shared room")),
+      
+      numericInput("accommodates", "Nombre d'occupants:", value = 2, min = 1, max = 16),
+      numericInput("bathrooms", "Nombre de salles de bains:", value = 1, min = 1, max = 10),
+      numericInput("bedrooms", "Nombre de chambres:", value = 1, min = 1, max = 10),
+      numericInput("beds", "Nombre de lits:", value = 1, min = 1, max = 10),
+      numericInput("number_of_reviews", "Nombre d'avis:", value = 50, min = 0, max = 5000),
+      numericInput("review_scores_value", "Note des avis:", value = 8, min = 0, max = 10),
+      
+      actionButton("predict", "Prédire le Prix")
+    ),
+    
+    mainPanel(
+      h3("Prix Prédit :"),
+      verbatimTextOutput("predicted_price")
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  observeEvent(input$predict, {
+    neighbourhood_cleansed <- switch(input$neighbourhood,
+                                     "Batignolles-Monceau" = 1,
+                                     "Bourse" = 2,
+                                     "Buttes-Chaumont" = 3,
+                                     "Buttes-Montmartre" = 4,
+                                     "Élysée" = 5,
+                                     "Entrepôt" = 6,
+                                     "Gobelins" = 7,
+                                     "Hôtel-de-Ville" = 8,
+                                     "Louvre" = 9,
+                                     "Luxembourg" = 10,
+                                     "Ménilmontant" = 11,
+                                     "Observatoire" = 12,
+                                     "Opéra" = 13,
+                                     "Palais-Bourbon" = 14,
+                                     "Panthéon" = 15,
+                                     "Passy" = 16,
+                                     "Popincourt" = 17,
+                                     "Reuilly" = 18,
+                                     "Temple" = 19,
+                                     "Vaugirard" = 20)
+    
+    room_type <- switch(input$room_type,
+                        "Entire home/apt" = 0,
+                        "Hotel room" = 1,
+                        "Private room" = 2,
+                        "Shared room" = 3)
+    
+    new_data <- data.frame(
+      # latitude = input$latitude,
+      # longitude = input$longitude,
+      neighbourhood_cleansed = neighbourhood_cleansed,
+      room_type = room_type,
+      accommodates = input$accommodates,
+      bathrooms = input$bathrooms,
+      bedrooms = input$bedrooms,
+      beds = input$beds,
+      number_of_reviews = input$number_of_reviews,
+      review_scores_value = input$review_scores_value
+    )
+    
+    predicted_price <- predict(modele_multiple, newdata = new_data)
+    
+    output$predicted_price <- renderText({
+      paste("Le prix prédit est : ", round(predicted_price, 2), "€")
+    })
+  })
+}
+
+shinyApp(ui = ui, server = server)
