@@ -81,7 +81,72 @@ tss_multiple <- sum((test_data$price - mean(test_data$price))^2)
 r_squared_multiple <- 1 - (rss_multiple / tss_multiple)
 print(paste("R-squared (multiple):", r_squared_multiple))
 
-# -------------------------------------------- shiny app ----------------------------------
+# -------------------------------------------------------------------- graphics --------------------------------------
+#Corrélation entre variables numériques et le prix
+
+library(corrplot)
+
+# Extraire uniquement les variables numériques
+numeric_vars <- df[, sapply(df, is.numeric)]
+cor_mat <- cor(numeric_vars, use = "complete.obs")
+
+corrplot(cor_mat, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45, 
+         title = "Corrélation entre variables numériques",
+         addCoef.col = "black", number.cex = 0.7)
+
+#Prix en fonction du nombre de personnes accueillies (accommodates)
+
+library(ggplot2)
+
+ggplot(df, aes(x = factor(accommodates), y = price)) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(title = "Prix par capacité d'accueil",
+       x = "Nombre de personnes",
+       y = "Prix") +
+  theme_minimal()
+
+#Effet du nombre de salles de bain sur le prix
+
+ggplot(df, aes(x = factor(round(bathrooms)), y = price)) +
+  geom_boxplot(fill = "salmon") +
+  labs(title = "Prix selon le nombre de salles de bain",
+       x = "Nombre de salles de bain",
+       y = "Prix") +
+  theme_minimal()
+
+#Prix moyen par type de logement (property_type)
+
+# Afficher uniquement les 10 types de logement les plus fréquents
+top_types <- names(sort(table(df$property_type), decreasing = TRUE))[1:10]
+
+df_top_types <- df[df$property_type %in% top_types, ]
+
+ggplot(df_top_types, aes(x = reorder(property_type, price, FUN = median), y = price)) +
+  geom_boxplot(fill = "lightskyblue") +
+  coord_flip() +
+  labs(title = "Prix selon le type de logement",
+       x = "Type de logement", y = "Prix") +
+  theme_minimal()
+
+#Lien entre score de review et prix
+
+ggplot(df, aes(x = review_scores_value, y = price)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Score des avis vs Prix",
+       x = "Score des avis (valeur)", y = "Prix") +
+  theme_minimal()
+
+#Histogramme groupé des prix par type de chambre
+
+ggplot(df, aes(x = price, fill = factor(room_type))) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
+  labs(title = "Distribution des prix par type de chambre",
+       x = "Prix", fill = "Type de chambre") +
+  theme_minimal()
+
+# ---------------------------------------------------------------- shiny app --------------------------------------------------------------------------
 library(shiny)
 
 ui <- fluidPage(
